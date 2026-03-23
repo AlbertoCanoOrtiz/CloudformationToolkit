@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Bedrock Knowledge base with OpenSearch serverless vector storage and VPC network
+
+Parameters:
+  KnowledgeBaseName:
+    Type: String
+    Default: underscore-image-bedrock-coastpeopleoai
+
+  RoleARN:
+    Type: String
+    Default: 'arn:aws:iam::123456789012:role/service-role/AmazonBedrockExecutionRoleForKnowledgeBase'
+    Description: IAM Service Role for Bedrock
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
+  VectorIndexName:
+    Type: String
+    Default: image-opensearch-coastpeople
+
+  VectorField:
+    Type: String
+    Default: image-vector-embeddings
+
+  TextField:
+    Type: String
+    Default: image-vector-text
+
+  MetadataField:
+    Type: String
+    Default: image-vector-metadata
+
+Resources:
+
+  UnderscoreImageOpensearchCoastpeopleai:
+    Type: AWS::OpenSearchServerless::Collection
+    Properties:
+      Name: image-opensearch-coastpeopleai
+      Type: VECTORSEARCH
+
+  UnderscoreImageOpensearchCoastpeopleaiVpcendpoint:
+    Type: AWS::OpenSearchServerless::VpcEndpoint
+    Properties:
+      Name: image-opensearch-coastpeople-vpc
+      VpcId: !Ref VpcId
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds: !Ref SecurityGroupIds
+
+  UnderscoreImageBedrockCoastpeopleai:
+    Type: AWS::Bedrock::KnowledgeBase
+    Properties:
+      Name: !Ref KnowledgeBaseName
+      RoleArn: !Ref RoleARN
+      KnowledgeBaseConfiguration:
+        Type: VECTOR
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-multimodal-embeddings-v1:0"
+      StorageConfiguration:
+        Type: OPENSEARCH_SERVERLESS
+        OpensearchServerlessConfiguration:
+          CollectionArn: !GetAtt UnderscoreImageOpensearchCoastpeopleai.Arn
+          VectorIndexName: !Ref VectorIndexName
+          FieldMapping:
+            VectorField: !Ref VectorField
+            TextField: !Ref TextField
+            MetadataField: !Ref MetadataField
