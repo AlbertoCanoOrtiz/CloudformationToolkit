@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: IAM Roles and Policies for Gmail MCP Server
+
+Parameters:
+
+  RoleName:
+    Type: String
+    Default: dogsjgp-gmail-mcp-lambda-role
+
+  PolicyName:
+    Type: String
+    Default: dogsjgp-gmail-mcp-s3-access
+
+  S3BucketName:
+    Type: String
+    Default: ogsjgp-gmail-mcp-server
+
+  McpServerZipKey:
+    Type: String
+    Default: ogsjgp-gmail-mcp-server.zip
+
+  LambdaHandlerZipKey:
+    Type: String
+    Default: lambda_handler.zip
+
+  ExportName:
+    Type: String
+    Default: dogsjgp-gmail-mcp-lambda-role-arn
+
+Resources:
+
+  GmailMcpLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: !Ref PolicyName
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${S3BucketName}/${McpServerZipKey}
+                  - !Sub arn:aws:s3:::${S3BucketName}/${LambdaHandlerZipKey}
+
+Outputs:
+
+  LambdaRoleArn:
+    Description: ARN of the Lambda execution role
+    Value: !GetAtt GmailMcpLambdaRole.Arn
+    Export:
+      Name: !Ref ExportName

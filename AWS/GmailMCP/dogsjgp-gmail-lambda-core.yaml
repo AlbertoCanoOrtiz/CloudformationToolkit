@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Lambda Core for Gmail MCP Server
+
+Parameters:
+
+  LambdaRoleArn:
+    Type: String
+    Default: !ImportValue dogsjgp-gmail-mcp-lambda-role-arn
+
+Resources:
+
+  GmailMcpLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: dogsjgp-gmail-mcp-core
+      Runtime: python3.11
+      Handler: lambda_handler.handler
+      Role: !Ref LambdaRoleArn
+      Timeout: 30
+      MemorySize: 1024
+      Layers:
+        - !Ref GmailMcpLayer
+      Code:
+        S3Bucket: ogsjgp-gmail-mcp-server
+        S3Key: lambda_handler.zip
+
+  GmailMcpLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: dogsjgp-gmail-mcp-layer
+      Description: Gmail MCP server code and dependencies
+      CompatibleRuntimes:
+        - python3.11
+      Content:
+        S3Bucket: ogsjgp-gmail-mcp-server
+        S3Key: ogsjgp-gmail-mcp-server.zip
+
+  GmailMcpLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GmailMcpLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+Outputs:
+
+  LambdaArn:
+    Description: ARN of the Gmail MCP Lambda function
+    Value: !GetAtt GmailMcpLambda.Arn
+    Export:
+      Name: dogsjgp-gmail-mcp-lambda-arn
